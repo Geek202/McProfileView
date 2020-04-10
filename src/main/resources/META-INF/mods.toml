@@ -1,0 +1,12 @@
+modLoader="javafml" #mandatory
+loaderVersion="[31,)" #mandatory
+
+[[mods]] #mandatory
+modId="mcprofileview" #mandatory
+version="1.0" #mandatory
+displayName="McProfileView" #mandatory
+description='''
+Allows you to view the contents of profiler logs in-game
+
+Generate one using /debug start then /debug stop
+'''
