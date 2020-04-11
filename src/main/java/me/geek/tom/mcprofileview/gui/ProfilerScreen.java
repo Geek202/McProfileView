@@ -1,6 +1,5 @@
 package me.geek.tom.mcprofileview.gui;
 
-import javafx.stage.FileChooser;
 import me.geek.tom.mcprofileview.profile.ProfileFile;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
@@ -8,9 +7,9 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.util.text.StringTextComponent;
 
-import javax.swing.*;
+import java.awt.*;
 import java.io.File;
-import java.io.IOException;
+import java.nio.file.Paths;
 
 public class ProfilerScreen extends Screen {
 
@@ -43,18 +42,22 @@ public class ProfilerScreen extends Screen {
     }
 
     private void openFile(Button button) {
-        System.setProperty("java.awt.headless", "false");
-        FileChooser chooser = new FileChooser();
-        chooser.setInitialDirectory(new File(System.getProperty("user.dir")));
-        File result = chooser.showOpenDialog(null);
-        if (result != null) {
+        System.setProperty("java.awt.headless", "false"); //Make sure headless is false, since this runs in a minecraft client this cannot be true
+
+        FileDialog dialog = new java.awt.FileDialog((java.awt.Frame) null);
+        dialog.setDirectory(System.getProperty("user.dir"));
+        dialog.setVisible(true);
+
+        //Make sure a file was chosen
+        if(dialog.getFile() == null) return;
+
+        File result = Paths.get(dialog.getDirectory(), dialog.getFile()).toFile();
+        if (!result.isDirectory() && result.exists()) {
             currentFile = result;
-            if (!currentFile.isDirectory()) {
-                try {
-                    profile = ProfileFile.load(currentFile);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+            try {
+                profile = ProfileFile.load(currentFile);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }
