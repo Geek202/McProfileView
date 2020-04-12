@@ -7,8 +7,11 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -43,13 +46,14 @@ public class ProfileFile {
         return root;
     }
 
+    @Deprecated // Use the new load function below
     public static ProfileFile load(File file) throws IOException {
         List<String> lines = IOUtils.readLines(new FileInputStream(file), Charset.defaultCharset()).stream().map(String::trim).collect(Collectors.toList());
         ProfileFile ret = new ProfileFile();
 
         TreePart currentParent = ret.getRoot();
         TreePart previous = currentParent;
-        int currentDepth = -1;
+        int currentDepth = 0;
         boolean isReadingProfileDump = false;
         int tickCount = 0;
         int time = 0;
@@ -75,11 +79,15 @@ public class ProfileFile {
                 String name = line.substring((depth * 4) + 5);
                 TreeBranch newPart = new TreeBranch(name, "");
                 if (depth < currentDepth) {
+                    System.out.printf("Step out from %d to %d\n", currentDepth, depth);
                     currentParent = currentParent.getParent();
                     currentDepth = depth;
                 } else if (depth > currentDepth) {
+                    System.out.printf("Step in from %d to %d\n", currentDepth, depth);
                     currentParent = previous;
                     currentDepth = depth;
+                } else {
+                    System.out.printf("Staying at depth: %d\n", depth);
                 }
                 if (name.contains("unspecified(4255/37) - 31.25%/0.58%"))
                     System.out.println("josdfgv");
@@ -94,6 +102,92 @@ public class ProfileFile {
         ret.setTime(time);
 
         return ret;
+    }
+
+    public static ProfileFile loadNew(File file) throws IOException {
+        List<String> lines = IOUtils.readLines(new FileInputStream(file), Charset.defaultCharset()).stream().map(String::trim).collect(Collectors.toList());
+        ProfileFile ret = new ProfileFile();
+
+        if (lines.size() == 0 || !lines.get(0).equals("---- Minecraft Profiler Results ----"))
+            throw new NotAProfileException();
+
+        int time = 0, tickCount = 0;
+
+        while (lines.size() != 0) {
+            String line = lines.remove(0);
+
+            if (line.startsWith("//")) // Comment
+                continue;
+
+            if (line.startsWith("Time span: ")) { // Time
+                time = Integer.parseInt(line.substring(11).replace(" ms", ""));
+            } else if (line.startsWith("Tick span: ")) { // Ticks
+                tickCount = Integer.parseInt(line.substring(11).replace(" ticks", ""));
+            } else if (line.startsWith("--- BEGIN PROFILE DUMP ---")) { // Start reading the tree
+                lines.remove(0); // Get rid of the blank line
+                String nextLine = lines.get(0);
+                while (!nextLine.equals("--- END PROFILE DUMP ---")) { // Read until end
+                    TreePart part = findChildren(lines, ret.getRoot());
+                    if (part != null)
+                        ret.getRoot().addBranch(part);
+                    else
+                        break;
+                    nextLine = lines.get(0);
+                }
+                break;
+            }
+        }
+
+        ret.setTicks(tickCount);
+        ret.setTime(time);
+
+        return ret;
+    }
+
+    private static TreePart findChildren(List<String> lines, TreePart parent) {
+        String startLine = lines.remove(0);
+
+        if (startLine.equals("--- END PROFILE DUMP ---"))
+            return null;
+
+        int depth = getDepth(startLine);
+
+        String name = startLine.substring((depth * 4) + 5);
+        TreeBranch ret = new TreeBranch(name, "");
+        ret.setParent(parent);
+
+        String nextLine = lines.get(0);
+        if (nextLine.equals("--- END PROFILE DUMP ---"))
+            return null;
+
+        int nextDepth = getDepth(nextLine);
+        List<TreePart> children = new ArrayList<>();
+        while (nextDepth > depth && lines.size() != 0) {
+            if (nextLine.equals("")) continue; // Skip blank line
+            TreePart child = findChildren(lines, ret);
+            if (child != null) {
+                children.add(child);
+                nextLine = lines.get(0);
+                nextDepth = getDepth(nextLine);
+            }
+            else break;
+        }
+        children.forEach(ret::addBranch);
+        return ret;
+    }
+
+    private static int getDepth(String line) {
+        Matcher m = DEPTH.matcher(line);
+        if (m.find()) {
+            return Integer.parseInt(m.group(1));
+        }
+        throw new RuntimeException(new IllegalArgumentException("No depth found in line: " + line));
+    }
+
+    public float getAverageTps() {
+        float tps = this.ticks / ((float) this.time / 1000);
+        DecimalFormat format = new DecimalFormat("##.##");
+        return Float.parseFloat(format.format(tps));
     }
 
     public static class NotAProfileException extends IOException { }

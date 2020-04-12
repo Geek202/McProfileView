@@ -38,13 +38,18 @@ public class ProfilerScreen extends Screen {
             int x = 100;
             int y = 16;
             renderer.drawStringWithShadow(text, x, y, 0xFFFFFFFF);
+            if (profile != null) {
+                renderer.drawStringWithShadow("Ran for " + profile.getTicks() + " ticks in " + profile.getTime()
+                        + " ms. (Aprox " + profile.getAverageTps() + " tps)",
+                        10, 35, 0xFFFFFFFF);
+            }
         }
     }
 
     private void openFile(Button button) {
         System.setProperty("java.awt.headless", "false"); //Make sure headless is false, since this runs in a minecraft client this cannot be true
 
-        FileDialog dialog = new java.awt.FileDialog((java.awt.Frame) null);
+        FileDialog dialog = new FileDialog((Frame) null);
         dialog.setDirectory(System.getProperty("user.dir"));
         dialog.setVisible(true);
 
@@ -55,7 +60,7 @@ public class ProfilerScreen extends Screen {
         if (!result.isDirectory() && result.exists()) {
             currentFile = result;
             try {
-                profile = ProfileFile.load(currentFile);
+                profile = ProfileFile.loadNew(currentFile);
             } catch (Exception e) {
                 e.printStackTrace();
             }
