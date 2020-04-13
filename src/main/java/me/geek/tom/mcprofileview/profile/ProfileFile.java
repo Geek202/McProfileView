@@ -7,7 +7,6 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.text.DecimalFormat;
@@ -19,10 +18,11 @@ import java.util.stream.Collectors;
 
 public class ProfileFile {
 
-    private TreeRoot root = new TreeRoot();
+    private final TreeRoot root = new TreeRoot();
     private int ticks, time;
 
     private static final Pattern DEPTH = Pattern.compile("\\[([0-9]{2})] ");
+    //private static final Pattern PERCENTS = Pattern.compile("(.*) - ([0-9]*.[0-9]*)%/([0-9]*.[0-9]*)%");
 
     private ProfileFile() { }
 
@@ -77,7 +77,7 @@ public class ProfileFile {
             } else if (m.find() && isReadingProfileDump) {
                 int depth = Integer.parseInt(m.group(1));
                 String name = line.substring((depth * 4) + 5);
-                TreeBranch newPart = new TreeBranch(name, "");
+                TreeBranch newPart = new TreeBranch(name, "", 0, 0);
                 if (depth < currentDepth) {
                     System.out.printf("Step out from %d to %d\n", currentDepth, depth);
                     currentParent = currentParent.getParent();
@@ -153,7 +153,23 @@ public class ProfileFile {
         int depth = getDepth(startLine);
 
         String name = startLine.substring((depth * 4) + 5);
-        TreeBranch ret = new TreeBranch(name, "");
+
+        float percentOfParent, percentOfTotal;
+        if (name.contains("%")) {
+            String percents = name.split(" - ")[1];
+            String[] parts = percents.split("/");
+
+            String parentVal = parts[0];
+            String totalVal = parts[1];
+
+            percentOfParent = Float.parseFloat(parentVal.replace("%", ""));
+            percentOfTotal = Float.parseFloat(totalVal.replace("%", ""));
+        } else {
+            percentOfParent = percentOfTotal = 0.0f;
+        }
+
+        TreeBranch ret = new TreeBranch(name, "", percentOfParent, percentOfTotal);
+
         ret.setParent(parent);
 
         String nextLine = lines.get(0);

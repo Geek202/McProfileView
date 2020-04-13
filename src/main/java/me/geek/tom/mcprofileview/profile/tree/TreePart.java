@@ -1,5 +1,7 @@
 package me.geek.tom.mcprofileview.profile.tree;
 
+import java.util.List;
+
 public interface TreePart {
     String getValue();
     String getName();
@@ -7,4 +9,8 @@ public interface TreePart {
 
     void addBranch(TreePart branch);
     <T extends TreePart> T getBranch(String name);
+
+    List<TreePart> getChildren();
+    float getTotalPercent();
+    float getParentPercent();
 }

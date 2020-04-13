@@ -1,5 +1,6 @@
 package me.geek.tom.mcprofileview.gui;
 
+import me.geek.tom.mcprofileview.gui.widget.TreeBar;
 import me.geek.tom.mcprofileview.profile.ProfileFile;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
@@ -14,8 +15,11 @@ import java.nio.file.Paths;
 public class ProfilerScreen extends Screen {
 
     private File currentFile;
-    private Screen parent;
+    //private Screen parent;
     private ProfileFile profile = null;
+
+    private TreeBar bar = null;
+
 
     public ProfilerScreen() {
         super(new StringTextComponent(""));
@@ -47,7 +51,7 @@ public class ProfilerScreen extends Screen {
     }
 
     private void openFile(Button button) {
-        System.setProperty("java.awt.headless", "false"); //Make sure headless is false, since this runs in a minecraft client this cannot be true
+        System.setProperty("java.awt.headless", "false"); // Make sure headless is false, since this runs in a minecraft client this cannot be true
 
         FileDialog dialog = new FileDialog((Frame) null);
         dialog.setDirectory(System.getProperty("user.dir"));
@@ -61,6 +65,13 @@ public class ProfilerScreen extends Screen {
             currentFile = result;
             try {
                 profile = ProfileFile.loadNew(currentFile);
+
+                if (bar != null) {
+                    this.buttons.remove(bar);
+                    this.children.remove(bar);
+                }
+
+                bar = addButton(new TreeBar(10, 45, profile.getRoot()));
             } catch (Exception e) {
                 e.printStackTrace();
             }

@@ -1,6 +1,8 @@
 package me.geek.tom.mcprofileview.profile.tree;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class TreeRoot implements TreePart {
@@ -18,6 +20,11 @@ public class TreeRoot implements TreePart {
     }
 
     @Override
+    public List<TreePart> getChildren() {
+        return new ArrayList<>(branches.values());
+    }
+
+    @Override
     public String getValue() {
         return null;
     }
@@ -30,5 +37,15 @@ public class TreeRoot implements TreePart {
     @Override
     public TreePart getParent() {
         return null;
+    }
+
+    @Override
+    public float getTotalPercent() {
+        return 100.0f;
+    }
+
+    @Override
+    public float getParentPercent() {
+        return 100.0f;
     }
 }
