@@ -67,7 +67,7 @@ public class ProfilerScreen extends Screen {
         List<String> lines = new ArrayList<>();
         lines.add(pts[0]);
         lines.add(percents[0] + " of parent");
-        lines.add(percents[1] + "of total");
+        lines.add(percents[1] + " of total");
         this.renderTooltip(lines, mouseX, mouseY);
     }
 
